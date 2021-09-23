@@ -35,12 +35,29 @@ Examples:
 	-v, --version string             Specify the version of the Knative Operator.
 "
 
+source "$(dirname "$0")/kn-op-commons.sh"
+
 # Initialize the variables
 NS="default"
 VERSION="latest"
 LINK="https://github.com/knative/operator/releases/latest/download/operator.yaml"
-TEMP_DIR="${TEMP_DIR:-$(mktemp -d -t ci-$(date +%Y-%m-%d-%H-%M-%S)-XXXXXXXXXX)}"
-YAML_FILE="knative-operator.yaml"
+
+# Generate the file values.yaml.
+function generate_values_yaml_operator_ns() {
+  # This function generate the file values.yaml to install the operator under a certain namespace.
+  ns=$1
+  rm -rf ${VALUES_YAML}
+  echo "#@data/values" >> ${VALUES_YAML}
+  echo "---" >> ${VALUES_YAML}
+  echo "namespace: ${ns}" >> ${VALUES_YAML}
+}
+
+# Generate the file base.yaml.
+function generate_base_yaml_operator_ns() {
+  # This function generate the file base.yaml to install the operator under a certain namespace.
+  link=$1
+  wget ${link} -O ${BASE_YAML}
+}
 
 while test $# -gt 0; do
   case "$1" in
@@ -77,24 +94,27 @@ done
 
 mkdir -p $TEMP_DIR
 
-if [ "$VERSION" != "latest" ]; then
-  LINK="https://github.com/knative/operator/releases/download/v$VERSION/operator.yaml"
-fi
-
-# Download the YAML file
-wget ${LINK} -O $TEMP_DIR/${YAML_FILE}
-
 if [ "$NS" != "default" ]; then
-  # Replace the default namespace
-  sed -i.bak "s/namespace: default/namespace: ${NS}/g" $TEMP_DIR/${YAML_FILE}
-
   # Create the namespace, if it does not exist.
   kubectl get ns ${NS} || kubectl create namespace ${NS}
   kubectl label namespace ${NS} istio-injection=enabled --overwrite
 fi
 
+if [ "$VERSION" != "latest" ]; then
+  LINK="https://github.com/knative/operator/releases/download/v$VERSION/operator.yaml"
+fi
+
+# Download the YAML file
+generate_base_yaml_operator_ns ${LINK}
+
+# Generate the file values.yaml based on the namespace.
+generate_values_yaml_operator_ns ${NS}
+
+# Generate the file overlay.yaml based on the namespace.
+generate_overlay_yaml overlay/operator.yaml
+
 # Install the Knative Operator
-kubectl apply -f $TEMP_DIR/${YAML_FILE}
+run_command
 
 # Remove all temporary files and directories
 rm -r $TEMP_DIR

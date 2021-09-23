@@ -22,7 +22,12 @@ import (
 
 func main() {
 	out, err := exec.Command("/bin/sh", "scripts/kn-op-install.sh").CombinedOutput()
-	//out, err := exec.Command("/bin/sh", "scripts/kn-op-uninstall.sh").CombinedOutput()
+	if err != nil && err.Error() != "exit status 1" {
+		log.Fatal(err)
+	}
+	fmt.Printf("%s\n", string(out))
+
+	out, err = exec.Command("/bin/sh", "scripts/kn-op-ks.sh").CombinedOutput()
 	if err != nil && err.Error() != "exit status 1" {
 		log.Fatal(err)
 	}
