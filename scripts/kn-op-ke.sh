@@ -38,11 +38,6 @@ Examples:
 
 source "$(dirname "$0")/kn-op-commons.sh"
 
-# Initialize the variables
-NS="knative-eventing"
-ISTIO_NS="istio-system"
-VERSION="latest"
-
 # Generate the file base.yaml.
 function generate_base_yaml_ke_ns() {
   # This function generate the file base.yaml to install knative eventing under a certain namespace.
@@ -78,6 +73,8 @@ function generate_overlay_ke_yaml() {
   cp overlay/ke.yaml ${OVERLAY_YAML}
 }
 
+mkdir -p $TEMP_DIR
+
 while test $# -gt 0; do
   case "$1" in
     -h|--help)
@@ -110,8 +107,6 @@ while test $# -gt 0; do
       ;;
   esac
 done
-
-mkdir -p $TEMP_DIR
 
 # Create the namespace, if it does not exist.
 kubectl get ns ${NS} || kubectl create namespace ${NS}

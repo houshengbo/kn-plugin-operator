@@ -42,11 +42,6 @@ Examples:
 
 source "$(dirname "$0")/kn-op-commons.sh"
 
-# Initialize the variables
-NS="knative-serving"
-ISTIO_NS="istio-system"
-VERSION="latest"
-
 # Generate the file base.yaml.
 function generate_base_yaml_ks_ns() {
   # This function generate the file base.yaml to install knative serving under a certain namespace.
@@ -95,6 +90,8 @@ function generate_overlay_ks_yaml() {
   fi
 }
 
+mkdir -p $TEMP_DIR
+
 while test $# -gt 0; do
   case "$1" in
     -h|--help)
@@ -137,8 +134,6 @@ while test $# -gt 0; do
       ;;
   esac
 done
-
-mkdir -p $TEMP_DIR
 
 # Create the namespace, if it does not exist.
 kubectl get ns ${NS} || kubectl create namespace ${NS}

@@ -38,8 +38,6 @@ Examples:
 source "$(dirname "$0")/kn-op-commons.sh"
 
 # Initialize the variables
-NS="default"
-VERSION="latest"
 LINK="https://github.com/knative/operator/releases/latest/download/operator.yaml"
 
 # Generate the file values.yaml.
@@ -58,6 +56,8 @@ function generate_base_yaml_operator_ns() {
   link=$1
   wget ${link} -O ${BASE_YAML}
 }
+
+mkdir -p $TEMP_DIR
 
 while test $# -gt 0; do
   case "$1" in
@@ -91,8 +91,6 @@ while test $# -gt 0; do
       ;;
   esac
 done
-
-mkdir -p $TEMP_DIR
 
 if [ "$NS" != "default" ]; then
   # Create the namespace, if it does not exist.

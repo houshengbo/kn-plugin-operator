@@ -28,8 +28,7 @@ Examples:
 	-n, --namespace string           Specify the namespace to delete the Knative Serving.
 "
 
-# Initialize the variables
-NS="default"
+source "$(dirname "$0")/kn-op-commons.sh"
 
 while test $# -gt 0; do
   case "$1" in

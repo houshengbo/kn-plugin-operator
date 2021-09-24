@@ -15,8 +15,8 @@
 # limitations under the License.
 
 # Initialize the variables
-NS="default"
-VERSION="latest"
+export NS="default"
+export VERSION="latest"
 export TEMP_DIR="${TEMP_DIR:-$(mktemp -d -t ci-$(date +%Y-%m-%d-%H-%M-%S)-XXXXXXXXXX)}"
 YTT_OUTPUT_DIR="${TEMP_DIR}/output"
 BASE_YAML="${TEMP_DIR}/base.yaml"
@@ -24,6 +24,7 @@ OVERLAY_YAML="${TEMP_DIR}/overlay.yaml"
 VALUES_YAML="${TEMP_DIR}/values.yaml"
 KS_DEFAULT_NS="knative-serving"
 KE_DEFAULT_NS="knative-eventing"
+export ISTIO_NS="istio-system"
 
 # Run the command.
 function run_command() {
