@@ -41,30 +41,28 @@ source "$(dirname "$0")/kn-op-commons.sh"
 # Generate the file base.yaml.
 function generate_base_yaml_ke_ns() {
   # This function generate the file base.yaml to install knative eventing under a certain namespace.
-  ns=$1
   rm -rf ${BASE_YAML}
-  result=$(kubectl get knativeeventing knative-eventing -n ${ns} -o yaml)
+  result=$(kubectl get knativeeventing knative-eventing -n ${NS} -o yaml)
   if [[ -z ${result} ]]; then
     echo "apiVersion: operator.knative.dev/v1alpha1" >> ${BASE_YAML}
     echo "kind: KnativeEventing" >> ${BASE_YAML}
     echo "metadata:" >> ${BASE_YAML}
-    echo "  name: knative-eventing" >> ${BASE_YAML}
-    echo "  namespace: ${ns}" >> ${BASE_YAML}
+    echo "  name: ${NAME}" >> ${BASE_YAML}
+    echo "  namespace: ${NS}" >> ${BASE_YAML}
   else
-    kubectl get knativeeventing knative-eventing -n ${ns} -o yaml | yq eval 'del(.metadata.finalizers,
+    kubectl get knativeeventing knative-eventing -n ${NS} -o yaml | yq eval 'del(.metadata.finalizers,
       .metadata.generation, .metadata.resourceVersion, .metadata.uid, .metadata.annotations, .metadata.creationTimestamp,
       .metadata.selfLink, .metadata.managedFields, .status)' - > ${BASE_YAML}
   fi
 }
 
 function generate_values_yaml_ke_ns {
-  ns=$1
-  version=$2
   rm -rf ${VALUES_YAML}
   echo "#@data/values" >> ${VALUES_YAML}
   echo "---" >> ${VALUES_YAML}
-  echo "namespace: ${ns}" >> ${VALUES_YAML}
-  echo "version: \"${version}\"" >> ${VALUES_YAML}
+  echo "name: ${NAME}" >> ${VALUES_YAML}
+  echo "namespace: ${NS}" >> ${VALUES_YAML}
+  echo "version: \"${VERSION}\"" >> ${VALUES_YAML}
 }
 
 # Generate the file overlay.yaml.
@@ -74,12 +72,24 @@ function generate_overlay_ke_yaml() {
 }
 
 mkdir -p $TEMP_DIR
+NS=${KE_DEFAULT_NS}
+NAME=${KE_DEFAULT_NAME}
 
 while test $# -gt 0; do
   case "$1" in
     -h|--help)
       echo "$USAGE"
       exit 0
+      ;;
+    --name)
+      shift
+      if test $# -gt 0; then
+        NAME=$1
+      else
+        echo "No name is specified."
+        exit 1
+      fi
+      shift
       ;;
     -n|--namespace)
       shift
@@ -111,10 +121,10 @@ done
 # Create the namespace, if it does not exist.
 kubectl get ns ${NS} || kubectl create namespace ${NS}
 
-generate_base_yaml_ke_ns ${NS}
+generate_base_yaml_ke_ns
 
 # Generate the file values.yaml based on the namespace.
-generate_values_yaml_ke_ns ${NS} ${VERSION}
+generate_values_yaml_ke_ns
 
 # Generate the file overlay.yaml based on the namespace.
 generate_overlay_ke_yaml

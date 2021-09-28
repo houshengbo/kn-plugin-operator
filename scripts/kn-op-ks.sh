@@ -21,6 +21,9 @@ Examples:
   # Install the Knative Serving under the namespace knative-serving
   kn-op-ks
 
+  # Install the Knative Serving with a specific name of the Knative Serving
+  kn-op-ks --name NAME
+
   # Install the Knative Serving at a specific version or upgrade to a specific version
   kn-op-ks -v VERSION
 
@@ -32,7 +35,7 @@ Examples:
 
   # Install the Knative Serving at a specific version or upgrade to a specific version
   # under a specified namespace, when Istio is installed under the non-default namespace
-  kn-op-ks -n NAMESPACE -v VERSION --istio-namespace ISTIO_NAMESPACE
+  kn-op-ks -n NAMESPACE -v VERSION --istio-namespace ISTIO_NAMESPACE --name NAME
 
   Flags:
 	-n, --namespace string           Specify the namespace to install the Knative Serving.
@@ -45,32 +48,30 @@ source "$(dirname "$0")/kn-op-commons.sh"
 # Generate the file base.yaml.
 function generate_base_yaml_ks_ns() {
   # This function generate the file base.yaml to install knative serving under a certain namespace.
-  ns=$1
   rm -rf ${BASE_YAML}
-  result=$(kubectl get knativeserving knative-serving -n ${ns} -o yaml)
+  result=$(kubectl get knativeserving ${NAME} -n ${NS} -o yaml)
   if [[ -z ${result} ]]; then
     echo "apiVersion: operator.knative.dev/v1alpha1" >> ${BASE_YAML}
     echo "kind: KnativeServing" >> ${BASE_YAML}
     echo "metadata:" >> ${BASE_YAML}
-    echo "  name: knative-serving" >> ${BASE_YAML}
-    echo "  namespace: ${ns}" >> ${BASE_YAML}
+    echo "  name: ${NAME}" >> ${BASE_YAML}
+    echo "  namespace: ${NS}" >> ${BASE_YAML}
   else
-    kubectl get knativeserving knative-serving -n ${ns} -o yaml | yq eval 'del(.metadata.finalizers,
+    kubectl get knativeserving knative-serving -n ${NS} -o yaml | yq eval 'del(.metadata.finalizers,
       .metadata.generation, .metadata.resourceVersion, .metadata.uid, .metadata.annotations, .metadata.creationTimestamp,
       .metadata.selfLink, .metadata.managedFields, .status)' - > ${BASE_YAML}
   fi
 }
 
 function generate_values_yaml_ks_ns {
-  ns=$1
-  version=$2
-  istio_ns=$3
+  version=$1
   rm -rf ${VALUES_YAML}
   echo "#@data/values" >> ${VALUES_YAML}
   echo "---" >> ${VALUES_YAML}
-  echo "namespace: ${ns}" >> ${VALUES_YAML}
+  echo "name: ${NAME}" >> ${VALUES_YAML}
+  echo "namespace: ${NS}" >> ${VALUES_YAML}
   echo "version: \"${version}\"" >> ${VALUES_YAML}
-  if [[ "${istio_ns}" != "istio-system" ]]; then
+  if [[ "${ISTIO_NS}" != "istio-system" ]]; then
     echo "local_gateway_value: knative-local-gateway.${istio_ns}.svc.cluster.local" >> ${VALUES_YAML}
   fi
 }
@@ -78,9 +79,7 @@ function generate_values_yaml_ks_ns {
 # Generate the file overlay.yaml.
 function generate_overlay_ks_yaml() {
   # This function generate the file values.yaml to install the operator under a certain namespace.
-  ns=$1
-  istio_ns=$2
-  if [[ "${istio_ns}" != "istio-system" ]]; then
+  if [[ "${ISTIO_NS}" != "istio-system" ]]; then
     cp overlay/ks_istio_ns.yaml ${OVERLAY_YAML}
     # Replace the namespace for the local gateway. Still have no idea how ytt replaces partially the string in the key,
     # so replace the substring in the overlay.yaml.
@@ -91,12 +90,24 @@ function generate_overlay_ks_yaml() {
 }
 
 mkdir -p $TEMP_DIR
+NS=${KS_DEFAULT_NS}
+NAME=${KS_DEFAULT_NAME}
 
 while test $# -gt 0; do
   case "$1" in
     -h|--help)
       echo "$USAGE"
       exit 0
+      ;;
+    --name)
+      shift
+      if test $# -gt 0; then
+        NAME=$1
+      else
+        echo "No name is specified."
+        exit 1
+      fi
+      shift
       ;;
     -n|--namespace)
       shift
@@ -138,13 +149,13 @@ done
 # Create the namespace, if it does not exist.
 kubectl get ns ${NS} || kubectl create namespace ${NS}
 
-generate_base_yaml_ks_ns ${NS}
+generate_base_yaml_ks_ns || true
 
 # Generate the file values.yaml based on the namespace.
-generate_values_yaml_ks_ns ${NS} ${VERSION} ${ISTIO_NS}
+generate_values_yaml_ks_ns ${VERSION}
 
 # Generate the file overlay.yaml based on the namespace.
-generate_overlay_ks_yaml ${NS} ${ISTIO_NS}
+generate_overlay_ks_yaml
 
 # Install the Knative Operator
 run_command

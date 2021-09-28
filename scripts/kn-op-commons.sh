@@ -17,14 +17,17 @@
 # Initialize the variables
 export NS="default"
 export VERSION="latest"
-export TEMP_DIR="${TEMP_DIR:-$(mktemp -d -t ci-$(date +%Y-%m-%d-%H-%M-%S)-XXXXXXXXXX)}"
-YTT_OUTPUT_DIR="${TEMP_DIR}/output"
-BASE_YAML="${TEMP_DIR}/base.yaml"
-OVERLAY_YAML="${TEMP_DIR}/overlay.yaml"
-VALUES_YAML="${TEMP_DIR}/values.yaml"
-KS_DEFAULT_NS="knative-serving"
-KE_DEFAULT_NS="knative-eventing"
 export ISTIO_NS="istio-system"
+export NAME="default"
+export TEMP_DIR="${TEMP_DIR:-$(mktemp -d -t ci-$(date +%Y-%m-%d-%H-%M-%S)-XXXXXXXXXX)}"
+readonly YTT_OUTPUT_DIR="${TEMP_DIR}/output"
+readonly BASE_YAML="${TEMP_DIR}/base.yaml"
+readonly OVERLAY_YAML="${TEMP_DIR}/overlay.yaml"
+readonly VALUES_YAML="${TEMP_DIR}/values.yaml"
+readonly KS_DEFAULT_NS="knative-serving"
+readonly KE_DEFAULT_NS="knative-eventing"
+readonly KS_DEFAULT_NAME="knative-serving"
+readonly KE_DEFAULT_NAME="knative-eventing"
 
 # Run the command.
 function run_command() {

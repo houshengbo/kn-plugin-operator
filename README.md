@@ -1,6 +1,6 @@
 # kn-plugin-operator
 
-`kn-plugin-event` is a plugin of Knative Client, for managing Knative with Knative Operator from the
+`kn-plugin-operator` is a plugin of Knative Client, for managing Knative with Knative Operator from the
 command line.
 
 ## Description
