@@ -19,7 +19,7 @@ before you build.
 Once you've set up your development environment, let's build the plugin.
 
 ```sh
-$ go build -o kn-operator ./cmd/main.go
+$ go build -o kn-operator ./cmd/kn-operator.go
 ```
 
 You'll get an executable plugin binary namely `kn-operator` in your current dir.
