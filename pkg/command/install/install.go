@@ -15,11 +15,9 @@
 package install
 
 import (
-	"context"
 	"fmt"
 	"os"
-
-	"k8s.io/apimachinery/pkg/api/errors"
+	"os/exec"
 
 	"github.com/spf13/cobra"
 	"k8s.io/client-go/kubernetes"
@@ -27,13 +25,14 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/oidc" // from https://github.com/kubernetes/client-go/issues/345
 	"k8s.io/client-go/tools/clientcmd"
 	"knative.dev/kn-plugin-operator/pkg"
-
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type installCmdFlags struct {
-	Namespace  string
-	KubeConfig string
+	Component      string
+	IstioNamespace string
+	Namespace      string
+	KubeConfig     string
+	Version        string
 }
 
 var (
@@ -53,27 +52,43 @@ func NewInstallCommand(p *pkg.OperatorParams) *cobra.Command {
   # Install Knative Serving under the namespace knative-serving
   kn operation install -c serving --namespace knative-serving`,
 
-		Run: func(cmd *cobra.Command, args []string) {
-			client, err := p.NewKubeClient()
+		RunE: func(cmd *cobra.Command, args []string) error {
+			_, err := p.NewKubeClient()
 			if err != nil {
-				fmt.Printf("cannot get source cluster kube config, please use --kubeconfig or export environment variable KUBECONFIG to set\n")
-				os.Exit(1)
+				return fmt.Errorf("cannot get source cluster kube config, please use --kubeconfig or export environment variable KUBECONFIG to set\n")
 			}
 
-			_, err = client.CoreV1().ConfigMaps("knative-serving").Get(context.TODO(), configDomain, metav1.GetOptions{})
-			if err != nil && !errors.IsNotFound(err) {
-				fmt.Printf("failed to get ConfigMap %s in namespace %s: %+v", configDomain, knativeServing, err)
+			rootPath, err := os.Getwd()
+			if err != nil {
+				return err
 			}
 
-			fmt.Printf("The client is OK.")
+			baseComm := rootPath + "/scripts/kn-op-install.sh"
+			if installFlags.Component == "" {
+				// If the component is empty, install the Knative Operator.
+				if installFlags.Namespace != "" {
+					baseComm = baseComm + " -n " + installFlags.Namespace
+				}
 
-			if errors.IsNotFound(err) {
-				fmt.Printf("The CM is not found.")
+				if installFlags.Version != "latest" {
+					baseComm = baseComm + " -v " + installFlags.Version
+				}
+
+				out, err := exec.Command("/bin/sh", baseComm).CombinedOutput()
+				if err != nil && err.Error() != "exit status 1" {
+					return err
+				}
+				fmt.Printf("%s\n", string(out))
 			}
+			return nil
 		},
 	}
 
 	installCmd.Flags().StringVarP(&installFlags.Namespace, "namespace", "n", "", "The namespace of the Knative Operator or the Knative component")
+	installCmd.Flags().StringVarP(&installFlags.Component, "component", "c", "", "The name of the Knative Component to install")
+	installCmd.Flags().StringVarP(&installFlags.Version, "version", "v", "latest", "The version of the the Knative Operator or the Knative component")
+	installCmd.Flags().StringVar(&installFlags.IstioNamespace, "istio-namespace", "", "The namespace of istio")
+
 	return installCmd
 }
 

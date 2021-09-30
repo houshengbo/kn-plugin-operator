@@ -39,5 +39,5 @@ function run_command() {
 function generate_overlay_yaml() {
   # This function generate the file values.yaml to install the operator under a certain namespace.
   original_file=$1
-  cp ${original_file} ${OVERLAY_YAML}
+  cp $(dirname "$0")"/"${original_file} ${OVERLAY_YAML}
 }
