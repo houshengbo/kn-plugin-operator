@@ -31,7 +31,7 @@ readonly KE_DEFAULT_NAME="knative-eventing"
 
 # Run the command.
 function run_command() {
-  ytt -f ${VALUES_YAML} -f ${OVERLAY_YAML} -f ${BASE_YAML} --output-files ${YTT_OUTPUT_DIR}
+  ytt -f ${VALUES_YAML} -f ${OVERLAY_YAML} -f ${BASE_YAML} --output-files ${YTT_OUTPUT_DIR} > /dev/null 2>&1
   kubectl apply -f ${YTT_OUTPUT_DIR}/
 }
 
@@ -39,5 +39,11 @@ function run_command() {
 function generate_overlay_yaml() {
   # This function generate the file values.yaml to install the operator under a certain namespace.
   original_file=$1
-  cp $(dirname "$0")"/"${original_file} ${OVERLAY_YAML}
+  path=$(dirname "$0")"/"${original_file}
+  run_exit "cp ${path} ${OVERLAY_YAML}"
+}
+
+function run_exit()
+{
+  $1 > /dev/null 2>&1
 }

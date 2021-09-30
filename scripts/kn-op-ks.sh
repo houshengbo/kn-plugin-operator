@@ -49,23 +49,22 @@ source "$(dirname "$0")/kn-op-commons.sh"
 function generate_base_yaml_ks_ns() {
   # This function generate the file base.yaml to install knative serving under a certain namespace.
   rm -rf ${BASE_YAML}
-  result=$(kubectl get knativeserving ${NAME} -n ${NS} -o yaml)
-  if [[ -z ${result} ]]; then
+  run_exit "kubectl get knativeserving ${NAME} -n ${NS}" && kubectl get knativeserving knative-serving -n ${NS} -o yaml | yq eval 'del(.metadata.finalizers,
+    .metadata.generation, .metadata.resourceVersion, .metadata.uid, .metadata.annotations, .metadata.creationTimestamp,
+    .metadata.selfLink, .metadata.managedFields, .status)' - > ${BASE_YAML}
+
+  if [ ! -f "${BASE_YAML}" ]; then
     echo "apiVersion: operator.knative.dev/v1alpha1" >> ${BASE_YAML}
     echo "kind: KnativeServing" >> ${BASE_YAML}
     echo "metadata:" >> ${BASE_YAML}
     echo "  name: ${NAME}" >> ${BASE_YAML}
     echo "  namespace: ${NS}" >> ${BASE_YAML}
-  else
-    kubectl get knativeserving knative-serving -n ${NS} -o yaml | yq eval 'del(.metadata.finalizers,
-      .metadata.generation, .metadata.resourceVersion, .metadata.uid, .metadata.annotations, .metadata.creationTimestamp,
-      .metadata.selfLink, .metadata.managedFields, .status)' - > ${BASE_YAML}
   fi
 }
 
 function generate_values_yaml_ks_ns {
   version=$1
-  rm -rf ${VALUES_YAML}
+  run_exit "rm -rf ${VALUES_YAML}"
   echo "#@data/values" >> ${VALUES_YAML}
   echo "---" >> ${VALUES_YAML}
   echo "name: ${NAME}" >> ${VALUES_YAML}
@@ -80,12 +79,14 @@ function generate_values_yaml_ks_ns {
 function generate_overlay_ks_yaml() {
   # This function generate the file values.yaml to install the operator under a certain namespace.
   if [[ "${ISTIO_NS}" != "istio-system" ]]; then
-    cp $(dirname "$0")"/"overlay/ks_istio_ns.yaml ${OVERLAY_YAML}
+    path=$(dirname "$0")"/"overlay/ks_istio_ns.yaml
+    run_exit "cp ${path} ${OVERLAY_YAML}"
     # Replace the namespace for the local gateway. Still have no idea how ytt replaces partially the string in the key,
     # so replace the substring in the overlay.yaml.
     sed -i.bak "s/<local_gateway_namespace>/${NS}/g" ${OVERLAY_YAML}
   else
-    cp $(dirname "$0")"/"overlay/ks.yaml ${OVERLAY_YAML}
+    path=$(dirname "$0")"/"overlay/ks.yaml
+    run_exit "cp ${path} ${OVERLAY_YAML}"
   fi
 }
 
@@ -147,7 +148,7 @@ while test $# -gt 0; do
 done
 
 # Create the namespace, if it does not exist.
-kubectl get ns ${NS} || kubectl create namespace ${NS}
+run_exit "kubectl get ns ${NS}" || run_exit "kubectl create namespace ${NS}"
 
 generate_base_yaml_ks_ns || true
 

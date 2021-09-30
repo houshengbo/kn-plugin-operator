@@ -37,6 +37,8 @@ Examples:
 
 source "$(dirname "$0")/kn-op-commons.sh"
 
+set -e
+
 # Initialize the variables
 LINK="https://github.com/knative/operator/releases/latest/download/operator.yaml"
 
@@ -44,7 +46,7 @@ LINK="https://github.com/knative/operator/releases/latest/download/operator.yaml
 function generate_values_yaml_operator_ns() {
   # This function generate the file values.yaml to install the operator under a certain namespace.
   ns=$1
-  rm -rf ${VALUES_YAML}
+  run_exit "rm -rf ${VALUES_YAML}"
   echo "#@data/values" >> ${VALUES_YAML}
   echo "---" >> ${VALUES_YAML}
   echo "namespace: ${ns}" >> ${VALUES_YAML}
@@ -54,10 +56,10 @@ function generate_values_yaml_operator_ns() {
 function generate_base_yaml_operator_ns() {
   # This function generate the file base.yaml to install the operator under a certain namespace.
   link=$1
-  wget ${link} -O ${BASE_YAML}
+  run_exit "wget ${link} -O ${BASE_YAML}"
 }
 
-mkdir -p $TEMP_DIR
+run_exit "mkdir -p $TEMP_DIR"
 
 while test $# -gt 0; do
   case "$1" in
@@ -94,8 +96,8 @@ done
 
 if [ "$NS" != "default" ]; then
   # Create the namespace, if it does not exist.
-  kubectl get ns ${NS} || kubectl create namespace ${NS}
-  kubectl label namespace ${NS} istio-injection=enabled --overwrite
+  run_exit "kubectl get ns ${NS}" || run_exit "kubectl create namespace ${NS}"
+  run_exit "kubectl label namespace ${NS} istio-injection=enabled --overwrite"
 fi
 
 if [ "$VERSION" != "latest" ]; then

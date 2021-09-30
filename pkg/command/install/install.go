@@ -85,11 +85,11 @@ func NewInstallCommand(p *pkg.OperatorParams) *cobra.Command {
 				baseComm = baseComm + " -v " + installFlags.Version
 			}
 
-			_, commErr := exec.Command("/bin/sh", baseComm).CombinedOutput()
+			out, commErr := exec.Command("/bin/sh", baseComm).CombinedOutput()
 			if commErr != nil && commErr.Error() != "exit status 1" {
 				return commErr
 			}
-			//fmt.Printf("%s\n", string(out))
+			fmt.Printf("%s\n", string(out))
 
 			return nil
 		},

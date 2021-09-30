@@ -42,22 +42,21 @@ source "$(dirname "$0")/kn-op-commons.sh"
 function generate_base_yaml_ke_ns() {
   # This function generate the file base.yaml to install knative eventing under a certain namespace.
   rm -rf ${BASE_YAML}
-  result=$(kubectl get knativeeventing knative-eventing -n ${NS} -o yaml)
-  if [[ -z ${result} ]]; then
+  run_exit "kubectl get knativeeventing ${NAME} -n ${NS}" && kubectl get knativeeventing knative-eventing -n ${NS} -o yaml | yq eval 'del(.metadata.finalizers,
+    .metadata.generation, .metadata.resourceVersion, .metadata.uid, .metadata.annotations, .metadata.creationTimestamp,
+    .metadata.selfLink, .metadata.managedFields, .status)' - > ${BASE_YAML}
+
+  if [ ! -f "${BASE_YAML}" ]; then
     echo "apiVersion: operator.knative.dev/v1alpha1" >> ${BASE_YAML}
     echo "kind: KnativeEventing" >> ${BASE_YAML}
     echo "metadata:" >> ${BASE_YAML}
     echo "  name: ${NAME}" >> ${BASE_YAML}
     echo "  namespace: ${NS}" >> ${BASE_YAML}
-  else
-    kubectl get knativeeventing knative-eventing -n ${NS} -o yaml | yq eval 'del(.metadata.finalizers,
-      .metadata.generation, .metadata.resourceVersion, .metadata.uid, .metadata.annotations, .metadata.creationTimestamp,
-      .metadata.selfLink, .metadata.managedFields, .status)' - > ${BASE_YAML}
   fi
 }
 
 function generate_values_yaml_ke_ns {
-  rm -rf ${VALUES_YAML}
+  run_exit "rm -rf ${VALUES_YAML}"
   echo "#@data/values" >> ${VALUES_YAML}
   echo "---" >> ${VALUES_YAML}
   echo "name: ${NAME}" >> ${VALUES_YAML}
@@ -68,7 +67,8 @@ function generate_values_yaml_ke_ns {
 # Generate the file overlay.yaml.
 function generate_overlay_ke_yaml() {
   # This function generate the file values.yaml to install the operator under a certain namespace.
-  cp $(dirname "$0")"/"overlay/ke.yaml ${OVERLAY_YAML}
+  path=$(dirname "$0")"/"overlay/ke.yaml
+  run_exit "cp ${path} ${OVERLAY_YAML}"
 }
 
 mkdir -p $TEMP_DIR
@@ -119,7 +119,7 @@ while test $# -gt 0; do
 done
 
 # Create the namespace, if it does not exist.
-kubectl get ns ${NS} || kubectl create namespace ${NS}
+run_exit "kubectl get ns ${NS}" || run_exit "kubectl create namespace ${NS}"
 
 generate_base_yaml_ke_ns
 
