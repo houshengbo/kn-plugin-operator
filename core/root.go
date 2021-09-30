@@ -18,6 +18,7 @@ import (
 	"github.com/spf13/cobra"
 	"knative.dev/kn-plugin-operator/pkg"
 	"knative.dev/kn-plugin-operator/pkg/command/install"
+	"knative.dev/kn-plugin-operator/pkg/command/uninstall"
 )
 
 var cfgFile string
@@ -45,5 +46,6 @@ kn operation install -c eventing
 	//p.Initialize()
 
 	rootCmd.AddCommand(install.NewInstallCommand(p))
+	rootCmd.AddCommand(uninstall.NewUninstallCommand(p))
 	return rootCmd
 }

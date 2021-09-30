@@ -30,6 +30,8 @@ Examples:
 
 source "$(dirname "$0")/kn-op-commons.sh"
 
+NS="knative-eventing"
+
 while test $# -gt 0; do
   case "$1" in
     -h|--help)

@@ -68,7 +68,7 @@ function generate_values_yaml_ke_ns {
 # Generate the file overlay.yaml.
 function generate_overlay_ke_yaml() {
   # This function generate the file values.yaml to install the operator under a certain namespace.
-  cp overlay/ke.yaml ${OVERLAY_YAML}
+  cp $(dirname "$0")"/"overlay/ke.yaml ${OVERLAY_YAML}
 }
 
 mkdir -p $TEMP_DIR

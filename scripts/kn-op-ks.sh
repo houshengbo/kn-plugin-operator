@@ -80,12 +80,12 @@ function generate_values_yaml_ks_ns {
 function generate_overlay_ks_yaml() {
   # This function generate the file values.yaml to install the operator under a certain namespace.
   if [[ "${ISTIO_NS}" != "istio-system" ]]; then
-    cp overlay/ks_istio_ns.yaml ${OVERLAY_YAML}
+    cp $(dirname "$0")"/"overlay/ks_istio_ns.yaml ${OVERLAY_YAML}
     # Replace the namespace for the local gateway. Still have no idea how ytt replaces partially the string in the key,
     # so replace the substring in the overlay.yaml.
     sed -i.bak "s/<local_gateway_namespace>/${NS}/g" ${OVERLAY_YAML}
   else
-    cp overlay/ks.yaml ${OVERLAY_YAML}
+    cp $(dirname "$0")"/"overlay/ks.yaml ${OVERLAY_YAML}
   fi
 }
 

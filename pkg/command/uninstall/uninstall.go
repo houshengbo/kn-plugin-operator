@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package install
+package uninstall
 
 import (
 	"fmt"
@@ -45,13 +45,13 @@ var (
 )
 
 // installCmd represents the install commands for the operation
-func NewInstallCommand(p *pkg.OperatorParams) *cobra.Command {
+func NewUninstallCommand(p *pkg.OperatorParams) *cobra.Command {
 	var installCmd = &cobra.Command{
-		Use:   "install",
-		Short: "Install Knative Operator or Knative components",
+		Use:   "uninstall",
+		Short: "Uninstall Knative Operator or Knative components",
 		Example: `
-  # Install Knative Serving under the namespace knative-serving
-  kn operation install -c serving --namespace knative-serving`,
+  # Uninstall Knative Serving under the namespace knative-serving
+  kn operation uninstall -c serving --namespace knative-serving`,
 
 		RunE: func(cmd *cobra.Command, args []string) error {
 			_, err := p.NewKubeClient()
@@ -64,41 +64,31 @@ func NewInstallCommand(p *pkg.OperatorParams) *cobra.Command {
 				return err
 			}
 
-			baseComm := rootPath + "/scripts/kn-op-install.sh"
+			baseComm := rootPath + "/scripts/kn-op-uninstall.sh"
 			if strings.EqualFold(installFlags.Component, "serving") {
-				baseComm = rootPath + "/scripts/kn-op-ks.sh"
-				if installFlags.IstioNamespace != "" {
-					baseComm = baseComm + " --istio-namespace " + installFlags.IstioNamespace
-				}
+				baseComm = rootPath + "/scripts/kn-op-ks-delete.sh"
 			} else if strings.EqualFold(installFlags.Component, "eventing") {
-				baseComm = rootPath + "/scripts/kn-op-ke.sh"
+				baseComm = rootPath + "/scripts/kn-op-ke-delete.sh"
 			} else if installFlags.Component != "" {
 				return fmt.Errorf("The component name is not valid.")
 			}
 
-			// If the component is empty, install the Knative Operator.
+			// If the component is empty, uninstall the Knative Operator.
 			if installFlags.Namespace != "" {
 				baseComm = baseComm + " -n " + installFlags.Namespace
 			}
 
-			if installFlags.Version != "latest" {
-				baseComm = baseComm + " -v " + installFlags.Version
-			}
-
-			_, commErr := exec.Command("/bin/sh", baseComm).CombinedOutput()
+			out, commErr := exec.Command("/bin/sh", baseComm).CombinedOutput()
 			if commErr != nil && commErr.Error() != "exit status 1" {
 				return commErr
 			}
-			//fmt.Printf("%s\n", string(out))
-
+			fmt.Printf("%s\n", string(out))
 			return nil
 		},
 	}
 
 	installCmd.Flags().StringVarP(&installFlags.Namespace, "namespace", "n", "", "The namespace of the Knative Operator or the Knative component")
 	installCmd.Flags().StringVarP(&installFlags.Component, "component", "c", "", "The name of the Knative Component to install")
-	installCmd.Flags().StringVarP(&installFlags.Version, "version", "v", "latest", "The version of the the Knative Operator or the Knative component")
-	installCmd.Flags().StringVar(&installFlags.IstioNamespace, "istio-namespace", "", "The namespace of istio")
 
 	return installCmd
 }
